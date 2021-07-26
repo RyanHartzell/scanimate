@@ -88,11 +88,13 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import imageio
 
+    # RUN THIS SCRIPT AS ```python core/moire.py```
+
     # 1) Example of circle moving, monochrome (144, 144)
     # Define control parameters
     stripe_width = 1 # size of each stripe in pixels, stripe per frame in animation. For now, only single pixel width works without fancy indexing and or fancy windowed striding
-    num_frames = 6 # number of frames in animation (image stack size)
-    replications = 24 # number of times the pattern defined by (stripe_width * num_frames) should be repeated
+    num_frames = 5 # number of frames in animation (image stack size)
+    replications = 64 # number of times the pattern defined by (stripe_width * num_frames) should be repeated
 
     # Next, setup your moire patterns
     size = stripe_width * num_frames * replications
@@ -107,27 +109,54 @@ if __name__ == "__main__":
 
     # We'll use the horizontal one from here on out
     # Let's make a stack of frames showing a circle moving
-    
+    X,Y = np.meshgrid(np.linspace(-5,5,size), np.linspace(-5,5,size))
+    r = np.sqrt(X**2+Y**2)
 
-    # Now lets build our
+    # Now lets build our circle
+    circle = np.zeros_like(r)
+    circle[r < 2.5] = 1
+
+    # and let's assemble the masked frames
+    masked_circle = np.asarray([np.zeros_like(circle)]*5)
+    for i in range(5):
+        masked_circle[i] = np.roll(circle, (i*30,i*20), axis=(0,1)) * np.roll(hgrid, stripe_width*i, axis=1)
+
+    # At this point these are the pattern-clipped frames (which can be visualized), but must be summed for printable static animation (scanimation)
+    masked_circle = np.sum(masked_circle, axis=0).astype(np.uint8)
+
+    # show the result
+    plt.imshow(masked_circle)
+    plt.title("Static")
+    plt.show()
 
     # 2) Example of michael.gif into static animation, RGBA
     # Load a gif of Michael from The Office
-    img = np.asarray(imageio.mimread("./images/michael.gif"))
+    img = np.asarray(imageio.mimread("images/michael.gif"))
+    print("GIF SHAPE [BEFORE SUBSAMP] = ", img.shape)
 
-    # Subsample image
+    # Subsample gif frames (axis=0)
     img = img[0::2]
+    print("GIF SHAPE [AFTER SUBSAMP]  = ", img.shape)
 
     grid = np.zeros_like(img)
-    grid[:,:,0::img.shape[0],:] = 1
+
+    # this step should likely be done with stride tricks sliding window view. Could also do that to build static animation image from source automatically,
+    #       but likely only for the vertical and horizontal striped cases. It's *possible* that I could work out a tiled  pattern and use that as the "grid"
+    #       using this method too, but I think that's outside of the scope here. Would like to come up with an efficient mask construction case regardless.
+    #       One other method would be to grab a view of a complex source mask, then "smear" it by interleaving how ever many copy columns from a view into a new array
+    #       then cropping to the size of the image to be masked. Something like that could work nicely. This may not be a one size fits all approach either though
+    
+    for i in range(stripe_width):
+        grid[:,:,i::img.shape[0]*stripe_width,:] = 1
+
+    # for i in range(stripe_width):
+    #     grid[:,i::img.shape[0]*stripe_width,:,:] = 1
+
     grid[:,:,:,-1] = 1 # takes care of alpha channel being always 1
 
     # Now we have two options, either store the rolled frames of the grid, or roll during multiplication
     for i in range(1, len(grid)):
-        grid[i] = np.roll(grid[i], i, axis=1) # axis = 1 for columnwise/horizontal shift, axis = 0 for rowwise/vertical shift
-
-    # for g in grid:
-    #     print(g[:10,:10,0])
+        grid[i] = np.roll(grid[i], i*stripe_width, axis=1) # axis = 1 for columnwise/horizontal shift, axis = 0 for rowwise/vertical shift
 
     # Multiply through, sum all frames together (taking care to replace alpha channel with 255.) and converting all to np.uint8
     res = img.astype(np.float32) * grid.astype(np.float32)
@@ -139,7 +168,26 @@ if __name__ == "__main__":
 
     # show the result
     plt.imshow(res)
+    plt.title("Static")
     plt.show()
+
+    # show the result animated by changing the grid's phase for some number of steps
+    plt.ion()
+
+    fig, ax = plt.subplots(1, figsize=(15,15))
+
+    for n in range(5):
+        for i in range(len(grid)):
+            ax.clear()
+            ax.set_title("Dynamic")
+            ax.imshow(res*grid[i,:,:])
+            plt.pause(1/(len(grid)))
+
+    plt.ioff()
+
+    # Save out both static image and grid (first frame only, since you'll print on physical medium and maybe even 3D print)
+    imageio.imwrite("images/michael_scanimation.png", res)
+    imageio.imwrite("images/michael_scanimation_grid.png", (255*grid[0]).astype(np.uint8))
 
     # Save at various dpi levels
     # TODO ...
