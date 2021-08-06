@@ -1,16 +1,27 @@
+# @Email: rah3156@rit.edu
+# @Website: https://ryanhartzell.github.io/scanimate
+# @License: https://github.com/RyanHartzell/scanimate/blob/master/LICENSE
+# @github: https://github.com/RyanHartzell/scanimate
+#
+# Copyright (c) 2020 Ryan Hartzell
+#
 """
 Purpose of this module should be two major things:
 
     1) Moire class for generating obscuration stripes/grids/patterns
-        * horizontal and vertical striped, uniform stride and width
-        * horizontal and vertical striped, variable/logarithmic/sigmoid stride and width (to play with animation keyframes)
-        - diagonal striped (anti-aliased?)
-        - SINUSOIDAL PATTERNS (shift by phase)
-        - blurry stipes or slight overlap for motion blurring?
-        - radial "sun" striped, uniform stride and width
-        - radial "pinwheel" striped, uniform stride and width
-        - concentric bands, play with "zoom" style clipping for frequency content (and distance viewing) based animation? Might be pretty cluttered
-        - hybrid image method? clip at different frequencies for different images, and then see different animation depending on grid you choose
+        Constant Patterns (don't change frame to frame)        
+            * horizontal and vertical striped, uniform stride and width
+            * horizontal and vertical striped, variable/logarithmic/sigmoid stride and width (to play with animation keyframes)
+            - diagonal striped (anti-aliased?)
+            - SINUSOIDAL PATTERNS (shift by phase)
+            - blurry stipes or slight overlap for motion blurring?
+            - radial "sun" striped, uniform stride and width
+            - radial "pinwheel" striped, uniform stride and width
+            - concentric bands, play with "zoom" style clipping for frequency content (and distance viewing) based animation? Might be pretty cluttered
+            - hybrid image method? clip at different frequencies for different images, and then see different animation depending on grid you choose
+        Variable Patterns (different spatial mask per frame)
+        - topographical / isomap where each "altitude" is clipped and rotated through (digital only!!!)
+        - random -> take a unique (or slightly overlapping...) random but uniformly distributed selection of pixels and clip to that, then do a different selection for each frame. might result in a more cohesive looking image than the consistent banding, or might break the illusion
 
     2) Functions for shifting the patterns:
         - laterally
