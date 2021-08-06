@@ -27,7 +27,7 @@ __all__ = [
 
 
 __name__ = 'scanimate'
-__version__ = '0.0.2-dev'
+__version__ = '0.0.3-dev'
 __description__ = 'Tiny package for generating static animations, or "scanimations"'
 
 __author__ = 'Ryan Hartzell'
