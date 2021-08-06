@@ -10,12 +10,12 @@ _**Note** that you'd currently need to fake things digitally to see movement whi
 
 ### Michael GIF
 
-![The multi-frame source GIF of Michael shrugging](./images/michael.gif)
+![The multi-frame source GIF of Michael shrugging](https://raw.githubusercontent.com/RyanHartzell/scanimate/master/images/michael.gif)
 
 ### Michael Scanimation
 
-![The resulting single-frame Michael Scanimation](./images/michael_scanimation.png)
+![The resulting single-frame Michael Scanimation](https://raw.githubusercontent.com/RyanHartzell/scanimate/master/images/michael_scanimation.png)
 
 ### Grid used to create effect
 
-![A columnar grid used to create the false motion when moved over top of the scanimation](./images/michael_scanimation_grid.png)
+![A columnar grid used to create the false motion when moved over top of the scanimation](https://raw.githubusercontent.com/RyanHartzell/scanimate/master/images/michael_scanimation_grid.png)
