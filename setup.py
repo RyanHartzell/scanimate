@@ -4,7 +4,7 @@ import os
 current_dir = os.path.dirname(__file__)
 
 # load __version__, __author__, __email__, etc variables
-with open(os.path.join(current_dir,'core/version_info.py')) as f:
+with open(os.path.join(current_dir,'scanimate/version_info.py')) as f:
     exec(f.read())
 
 # load in list of requirements
