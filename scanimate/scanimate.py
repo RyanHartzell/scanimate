@@ -5,3 +5,8 @@
 #
 # Copyright (c) 2020 Ryan Hartzell
 #
+
+if __name__=="__main__":
+    from version_info import __version__
+    print(f"Scanimate Library Version: {__version__}")
+    print("Scanimate script is working!")

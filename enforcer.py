@@ -180,7 +180,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--directory',
                         help='the directory to enforce recursively',
-                        default='./core',
+                        default='./scanimate',
                         )
     args = parser.parse_args()
 
