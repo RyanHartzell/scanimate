@@ -41,5 +41,10 @@ setuptools.setup(name='scanimate',
       install_requires=requirements, # these are always installed
       extras_require = {
                     'dev' : requirements_dev,
-                    }
+                    },
+      entry_points={
+          "console_scripts": [
+              "scanimate=scanimate.scanimate:main",
+          ]
+      }
 )
