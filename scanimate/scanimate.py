@@ -17,6 +17,7 @@ It will allow you to turn a GIF into a static animation, also known as
 
 from argparse import ArgumentError, ArgumentParser
 from pathlib import Path
+from shutil import Error
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -29,9 +30,12 @@ def _build_parser():
     parser.add_argument('--pattern', nargs='?', const="hgrid", default="hgrid", help="The pattern used to create the scanimation. Accepts values of 'hgrid' or 'vgrid'")
     parser.add_argument('--downsample', nargs='?', const=2, default=1, help="The downsample factor when reading a gif. For example, a downsample factor of 2 will take every other frame in the gif as input.")
     parser.add_argument('--stripewidth', nargs='?', const=1, default=1, help="The width in pixels of each transparent stripe in the grid patterns")
-    parser.add_argument('--scan_dest', nargs='?', const='.', default='.', help="Output path of scanimation file")
-    parser.add_argument('--patt_dest', nargs='?', const='.', default='.', help="Output path of pattern file")
+    parser.add_argument('--scan_dest', nargs='?', const=None, default=None, help="Output path of scanimation file")
+    parser.add_argument('--patt_dest', nargs='?', const=None, default=None, help="Output path of pattern file")
     parser.add_argument('--dest', nargs='?', const='.', default=None, help="Common output directory for scanimate.png and pattern.png")
+    parser.add_argument('--display', action="store_true", default=False, help="Displays the result in a matplotlib window")
+    parser.add_argument('--emulate', action="store_true", default=False, help="Emulates the 'false motion' optical illusion acheived when moving the pattern in front of the scanimation frame")
+    parser.add_argument('--no_save', action="store_true", default=False, help="If set, no files will be written to disk")
 
     # Optional (Modes)
 
@@ -53,8 +57,8 @@ def main():
                 paths = [Path(f) for f in args.image_source] # No real hit here since we are only dealing with low numbers of files. Should probably set a cap as well...
                 npaths = len(paths)
 
-                print(paths)
-                print(paths[0].suffix.lower())
+                # print(paths)
+                # print(paths[0].suffix.lower())
 
                 # Load each image
                 if npaths == 1 and paths[0].suffix.lower() == ".gif":
@@ -74,23 +78,24 @@ def main():
                     #       One other method would be to grab a view of a complex source mask, then "smear" it by interleaving how ever many copy columns from a view into a new array
                     #       then cropping to the size of the image to be masked. Something like that could work nicely. This may not be a one size fits all approach either though
 
+                    stripewidth = int(args.stripewidth)
                     if args.pattern == "hgrid":
-                        
-                        for i in range(args.stripewidth):
-                            grid[:,:,i::img.shape[0]*args.stripewidth,:] = 1
+
+                        for i in range(stripewidth):
+                            grid[:,:,i::img.shape[0]*stripewidth,:] = 1
                         
                         # Now we have two options, either store the rolled frames of the grid, or roll during multiplication
                         for i in range(1, len(grid)):
-                            grid[i] = np.roll(grid[i], i*args.stripewidth, axis=1) # axis = 1 for columnwise/horizontal shift, axis = 0 for rowwise/vertical shift
+                            grid[i] = np.roll(grid[i], i*stripewidth, axis=1) # axis = 1 for columnwise/horizontal shift, axis = 0 for rowwise/vertical shift
 
                     elif args.pattern == "vgrid":
                         
-                        for i in range(args.stripewidth):
-                            grid[:,i::img.shape[0]*args.stripewidth,:,:] = 1
+                        for i in range(stripewidth):
+                            grid[:,i::img.shape[0]*stripewidth,:,:] = 1
                         
                         # Now we have two options, either store the rolled frames of the grid, or roll during multiplication
                         for i in range(1, len(grid)):
-                            grid[i] = np.roll(grid[i], i*args.stripewidth, axis=0) # axis = 1 for columnwise/horizontal shift, axis = 0 for rowwise/vertical shift
+                            grid[i] = np.roll(grid[i], i*stripewidth, axis=0) # axis = 1 for columnwise/horizontal shift, axis = 0 for rowwise/vertical shift
 
                     grid[:,:,:,-1] = 1 # takes care of alpha channel being always 1
 
@@ -103,26 +108,33 @@ def main():
                     res = res.astype(np.uint8)
 
                     # show the result
-                    plt.imshow(res)
-                    plt.title("Static")
-                    plt.show()
+                    if args.display:
+                        plt.imshow(res)
+                        plt.title("Scanimation Result")
+                        plt.show()
 
-                    # # show the result animated by changing the grid's phase for some number of steps
-                    # plt.ion()
+                    # show the result animated by changing the grid's phase for some number of steps (this should be pattern agnostic)
+                    if args.emulate:
+                        plt.ion()
 
-                    # fig, ax = plt.subplots(1, figsize=(15,15))
+                        fig, ax = plt.subplots(1, figsize=(15,15))
 
-                    # for n in range(5):
-                    #     for i in range(len(grid)):
-                    #         ax.clear()
-                    #         ax.set_title("Dynamic")
-                    #         ax.imshow(res*grid[i,:,:])
-                    #         plt.pause(1/(len(grid)))
+                        for n in range(5):
+                            for i in range(len(grid)):
+                                ax.clear()
+                                ax.set_title("Dynamic Emulation")
+                                ax.imshow(res*grid[i,:,:])
+                                plt.pause(1/(len(grid)))
 
-                    # plt.ioff()
+                        plt.ioff()
+
+                    if args.no_save:
+                        # Skip saving if this is true
+                        return
 
                     # Save out both static image and grid (first frame only, since you'll print on physical medium and maybe even 3D print)
                     if args.dest is not None:
+                        # If dest has been provided, then try to write to the location a default "scanimate.png" and "pattern.png"
                         dest = Path(args.dest)
 
                         # if destinations don't already exist, make them
@@ -132,9 +144,12 @@ def main():
                         imageio.imwrite(dest / "scanimation.png", res)
                         imageio.imwrite(dest / "pattern.png", (255*grid[0]).astype(np.uint8))
                         print("Finished processing your scanimation!")
+                        print("Scanimation path: ", (dest / "scanimation.png").absolute())
+                        print("Pattern path:     ", (dest / "pattern.png").absolute())
                         return
 
-                    else:
+                    elif args.scan_dest is not None and args.patt_dest is not None:
+                        # If scan_dest and patt_dest have been provided, then try to write to the locations
                         scanimation_dest = Path(args.scan_dest)
                         pattern_dest = Path(args.patt_dest)
 
@@ -142,11 +157,34 @@ def main():
                         import os
                         os.makedirs(scanimation_dest.parent, exist_ok=True)
                         os.makedirs(pattern_dest.parent, exist_ok=True)
-            
-                        imageio.imwrite(scanimation_dest, res)
-                        imageio.imwrite(pattern_dest, (255*grid[0]).astype(np.uint8))
+
+                        try:
+                            imageio.imwrite(scanimation_dest, res)
+                            imageio.imwrite(pattern_dest, (255*grid[0]).astype(np.uint8))
+
+                        except:
+                            raise Error("Could not write results using imageio. Make sure filepaths are valid and image extension is valid for imageio (which can be extended with plugins)")
+
                         print("Finished processing your scanimation!")
+                        print("Scanimation path: ", scanimation_dest.absolute())
+                        print("Pattern path:     ", pattern_dest.absolute())
                         return
+
+                    else:
+                        # If no destination or specific filepaths for the outputs are given, simply perform default '--dest .' behavior
+                        import os
+                        dest = Path(os.getcwd())
+
+                        # if destinations don't already exist, make them
+                        os.makedirs(dest, exist_ok=True)
+
+                        imageio.imwrite(dest / "scanimation.png", res)
+                        imageio.imwrite(dest / "pattern.png", (255*grid[0]).astype(np.uint8))
+                        print("Finished processing your scanimation! Using default destination and filenames...")
+                        print("Scanimation path: ", (dest / "scanimation.png").absolute())
+                        print("Pattern path:     ", (dest / "pattern.png").absolute())
+                        return
+
                 
                 else:
                     print("Finished!")
